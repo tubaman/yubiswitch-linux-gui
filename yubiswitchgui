@@ -37,6 +37,10 @@ function is_enabled {
 	test $(yubiswitch.py list | grep -Eo "active=(True|False)" | grep -Eo "(True|False)" | tail -n1) == "True"
 }
 
+function has_yubikey {
+	test -n "$(yubiswitch.py list)"
+}
+
 function status_yubikey {
 	if $(is_enabled); then
 		echo "enabled"
@@ -48,6 +52,14 @@ function status_yubikey {
 		echo "icon shown"
 	fi
 }
+
+
+### MAIN ###
+
+if ! has_yubikey; then
+	echo "error: Yubikey not found" >&2
+	exit 3
+fi
 
 case $1 in
 	enable|on|start)
