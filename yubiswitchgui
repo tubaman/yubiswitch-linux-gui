@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+US="$0"
+
+function enable_yubikey {
+	if $(is_enabled); then
+		echo "error: already enabled" >&2
+		return 2
+	fi
+	yubiswitch.py on > /dev/null 2>&1
+	show_enabled_icon
+}
+
+function disable_yubikey {
+	if ! $(is_enabled); then
+		echo "error: already disabled" >&2
+		return 2
+	fi
+	yubiswitch.py off > /dev/null 2>&1
+	show_disabled_icon
+}
+
+function show_enabled_icon {
+	pkill -f "yad.*touchpad" || true
+	yad --notification --image=input-touchpad --text="Yubikey Enabled" --command="$US disable" &
+}
+
+function show_disabled_icon {
+	pkill -f "yad.*touchpad" || true
+	yad --notification --image=touchpad-disabled --text="Yubikey Disabled" --command="$US enable" &
+}
+
+function is_enabled {
+	test $(yubiswitch.py list | grep -Eo "active=(True|False)" | grep -Eo "(True|False)" | tail -n1) == "True"
+}
+
+function status_yubikey {
+	if $(is_enabled); then
+		echo "enabled"
+		show_enabled_icon
+		echo "icon shown"
+	else
+		echo "disabled"
+		show_disabled_icon
+		echo "icon shown"
+	fi
+}
+
+case $1 in
+	enable|on|start)
+	enable_yubikey
+	;;
+	disable|off|stop)
+	disable_yubikey
+	;;
+	status|'')
+	status_yubikey
+	;;
+	*)
+	echo "error: unknown command: '$1'" >&2
+	exit 1
+	;;
+esac
