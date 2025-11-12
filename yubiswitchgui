@@ -5,6 +5,8 @@ set -o pipefail
 
 US="$0"
 
+PIDFILE=/var/run/user/$UID/yubiswitchgui.pid
+
 function enable_yubikey {
 	if $(is_enabled); then
 		echo "error: already enabled" >&2
@@ -12,6 +14,8 @@ function enable_yubikey {
 	fi
 	yubiswitch.py on > /dev/null 2>&1
 	show_enabled_icon
+	# automatically disable after 30 secs
+	nohup bash -c "sleep 30; yubiswitchgui disable" &
 }
 
 function disable_yubikey {
@@ -24,17 +28,19 @@ function disable_yubikey {
 }
 
 function show_enabled_icon {
-	pkill -f "yad.*touchpad" || true
+	test -e $PIDFILE && kill $(cat $PIDFILE) || true
 	yad --notification --image=input-touchpad --text="Yubikey Enabled" --command="$US disable" &
+	echo $! > $PIDFILE
 }
 
 function show_disabled_icon {
-	pkill -f "yad.*touchpad" || true
+	test -e $PIDFILE && kill $(cat $PIDFILE) || true
 	yad --notification --image=touchpad-disabled --text="Yubikey Disabled" --command="$US enable" &
+	echo $! > $PIDFILE
 }
 
 function is_enabled {
-	test $(yubiswitch.py list | grep -Eo "active=(True|False)" | grep -Eo "(True|False)" | tail -n1) == "True"
+	test $(yubiswitch.py list | grep -Eo "active=(True|False)" | grep -Eo "(True|False)" | head -n1) == "True"
 }
 
 function has_yubikey {
