@@ -9,10 +9,10 @@ PIDFILE=/var/run/user/$UID/yubiswitchgui.pid
 
 function enable_yubikey {
 	if $(is_enabled); then
-		echo "error: already enabled" >&2
-		return 2
+		echo "warn: already enabled" >&2
+	else
+		yubiswitch.py on > /dev/null 2>&1
 	fi
-	yubiswitch.py on > /dev/null 2>&1
 	show_enabled_icon
 	# automatically disable after 30 secs
 	nohup bash -c "sleep 30; yubiswitchgui disable" &
@@ -21,9 +21,9 @@ function enable_yubikey {
 function disable_yubikey {
 	if ! $(is_enabled); then
 		echo "error: already disabled" >&2
-		return 2
+	else
+		yubiswitch.py off > /dev/null 2>&1
 	fi
-	yubiswitch.py off > /dev/null 2>&1
 	show_disabled_icon
 }
 
